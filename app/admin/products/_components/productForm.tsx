@@ -1,18 +1,29 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/formatters";
-import { useState } from "react";
+import { useActionState, useState } from "react";
+import { addProduct } from "../../_actions/products";
+import { useFormState, useFormStatus } from "react-dom";
 
 export function ProductForm() {
-  const [priceCents, setPriceCents] = useState<number>();
+  const [priceCents, setPriceCents] = useState<string>("");
+  const [error, formAction] = useActionState(addProduct, {
+    errors: {},
+  });
   return (
-    <form action="space-y-8">
+    <form action={formAction} className="space-y-8">
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
         <Input type="text" id="name" name="name" required />
+        {error?.errors?.name?.map((err, i) => (
+          <div key={i} className="text-destructive">
+            {err}
+          </div>
+        ))}
       </div>
       <div className="space-y-2">
         <Label htmlFor="priceCents">Price (Cents)</Label>
@@ -22,24 +33,54 @@ export function ProductForm() {
           name="priceCents"
           required
           value={priceCents}
-          onChange={(e) => setPriceCents(Number(e.target.value) || undefined)}
+          onChange={(e) => setPriceCents(e.target.value)}
         />
         <div className="text-muted-foreground">
-          {formatCurrency((priceCents || 0) / 100)}
+          {formatCurrency((Number(priceCents) || 0) / 100)}
         </div>
+        {error?.errors?.priceCents?.map((err, i) => (
+          <div key={i} className="text-destructive">
+            {err}
+          </div>
+        ))}
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" name="description" required />
+        {error?.errors?.description?.map((err, i) => (
+          <div key={i} className="text-destructive">
+            {err}
+          </div>
+        ))}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="productFile">Product File</Label>
-        <Input type="file" id="productFile" name="productFile" required />
+        <Label htmlFor="file">Product File</Label>
+        <Input type="file" id="file" name="file" required />
+        {error?.errors?.file?.map((err, i) => (
+          <div key={i} className="text-destructive">
+            {err}
+          </div>
+        ))}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="imageFile">Product File</Label>
-        <Input type="file" id="imageFile" name="imageFile" required />
+        <Label htmlFor="image">Image</Label>
+        <Input type="file" id="image" name="image" required />
+        {error?.errors?.image?.map((err, i) => (
+          <div key={i} className="text-destructive">
+            {err}
+          </div>
+        ))}
       </div>
+      <SubmitButton />
     </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Adding..." : "Add Product"}
+    </Button>
   );
 }
