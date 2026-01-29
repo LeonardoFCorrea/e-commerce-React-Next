@@ -1,86 +1,99 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency } from "@/lib/formatters";
-import { useActionState, useState } from "react";
-import { addProduct } from "../../_actions/products";
-import { useFormState, useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { formatCurrency } from "@/lib/formatters"
+import { useState } from "react"
+import { addProduct, updateProduct } from "../../_actions/products"
+import { useFormState, useFormStatus } from "react-dom"
+import { Product } from "@prisma/client"
+import Image from "next/image"
 
-export function ProductForm() {
-  const [priceCents, setPriceCents] = useState<string>("");
-  const [error, formAction] = useActionState(addProduct, {
-    errors: {},
-  });
+export function ProductForm({ product }: { product?: Product | null }) {
+  const [error, action] = useFormState(
+    product == null ? addProduct : updateProduct.bind(null, product.id),
+    {}
+  )
+  const [priceInCents, setPriceInCents] = useState<number | undefined>(
+    product?.priceCents
+  )
+
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={action} className="space-y-8">
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
-        <Input type="text" id="name" name="name" required />
-        {error?.errors?.name?.map((err, i) => (
-          <div key={i} className="text-destructive">
-            {err}
-          </div>
-        ))}
+        <Input
+          type="text"
+          id="name"
+          name="name"
+          required
+          defaultValue={product?.name || ""}
+        />
+        {error.name && <div className="text-destructive">{error.name}</div>}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="priceCents">Price (Cents)</Label>
+        <Label htmlFor="priceInCents">Price In Cents</Label>
         <Input
           type="number"
-          id="priceCents"
-          name="priceCents"
+          id="priceInCents"
+          name="priceInCents"
           required
-          value={priceCents}
-          onChange={(e) => setPriceCents(e.target.value)}
+          value={priceInCents}
+          onChange={e => setPriceInCents(Number(e.target.value) || undefined)}
         />
         <div className="text-muted-foreground">
-          {formatCurrency((Number(priceCents) || 0) / 100)}
+          {formatCurrency((priceInCents || 0) / 100)}
         </div>
-        {error?.errors?.priceCents?.map((err, i) => (
-          <div key={i} className="text-destructive">
-            {err}
-          </div>
-        ))}
+        {error.priceInCents && (
+          <div className="text-destructive">{error.priceInCents}</div>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" required />
-        {error?.errors?.description?.map((err, i) => (
-          <div key={i} className="text-destructive">
-            {err}
-          </div>
-        ))}
+        <Textarea
+          id="description"
+          name="description"
+          required
+          defaultValue={product?.desc}
+        />
+        {error.description && (
+          <div className="text-destructive">{error.description}</div>
+        )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="file">Product File</Label>
-        <Input type="file" id="file" name="file" required />
-        {error?.errors?.file?.map((err, i) => (
-          <div key={i} className="text-destructive">
-            {err}
-          </div>
-        ))}
+        <Label htmlFor="file">File</Label>
+        <Input type="file" id="file" name="file" required={product == null} />
+        {product != null && (
+          <div className="text-muted-foreground">{product.filePath}</div>
+        )}
+        {error.file && <div className="text-destructive">{error.file}</div>}
       </div>
       <div className="space-y-2">
         <Label htmlFor="image">Image</Label>
-        <Input type="file" id="image" name="image" required />
-        {error?.errors?.image?.map((err, i) => (
-          <div key={i} className="text-destructive">
-            {err}
-          </div>
-        ))}
+        <Input type="file" id="image" name="image" required={product == null} />
+        {product != null && (
+          <Image
+            src={product.imgPath}
+            height="400"
+            width="400"
+            alt="Product Image"
+          />
+        )}
+        {error.image && <div className="text-destructive">{error.image}</div>}
       </div>
       <SubmitButton />
     </form>
-  );
+  )
 }
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const { pending } = useFormStatus()
+
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Adding..." : "Add Product"}
+      {pending ? "Saving..." : "Save"}
     </Button>
-  );
+  )
 }

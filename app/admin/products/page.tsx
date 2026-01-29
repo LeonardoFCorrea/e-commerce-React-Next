@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "../_components/pageHeader";
-import Link from "next/link";
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -8,16 +7,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import db from "@/db/db";
-import { CheckCircle, MoreVertical, XCircle } from "lucide-react";
-import { formatCurrency, formatNumber } from "@/lib/formatters";
+} from "@/components/ui/table"
+import db from "@/db/db"
+import { CheckCircle2, MoreVertical, XCircle } from "lucide-react"
+import { formatCurrency, formatNumber } from "@/lib/formatters"
 import {
-    DropdownMenu,
+  DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
+import {
+  ActiveToggleDropdownItem,
+  DeleteDropdownItem,
+} from "./_components/ProductActions"
+import { PageHeader } from "../_components/pageHeader"
 
 export default function AdminProductsPage() {
   return (
@@ -25,12 +30,12 @@ export default function AdminProductsPage() {
       <div className="flex justify-between items-center gap-4">
         <PageHeader>Products</PageHeader>
         <Button asChild>
-          <Link href="products/new">Add Product</Link>
+          <Link href="/admin/products/new">Add Product</Link>
         </Button>
       </div>
       <ProductsTable />
     </>
-  );
+  )
 }
 
 async function ProductsTable() {
@@ -43,9 +48,9 @@ async function ProductsTable() {
       _count: { select: { orders: true } },
     },
     orderBy: { name: "asc" },
-  });
+  })
 
-  if (products.length === 0) return <p>No products!</p>;
+  if (products.length === 0) return <p>No products found</p>
 
   return (
     <Table>
@@ -63,18 +68,18 @@ async function ProductsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {products.map((product) => (
+        {products.map(product => (
           <TableRow key={product.id}>
             <TableCell>
               {product.isAvailableForPurchase ? (
                 <>
                   <span className="sr-only">Available</span>
-                  <CheckCircle />
+                  <CheckCircle2 />
                 </>
               ) : (
                 <>
                   <span className="sr-only">Unavailable</span>
-                  <XCircle />
+                  <XCircle className="stroke-destructive" />
                 </>
               )}
             </TableCell>
@@ -94,8 +99,19 @@ async function ProductsTable() {
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={`/admin/products/${product.id}/edit`}>Edit</Link>
+                    <Link href={`/admin/products/${product.id}/edit`}>
+                      Edit
+                    </Link>
                   </DropdownMenuItem>
+                  <ActiveToggleDropdownItem
+                    id={product.id}
+                    isAvailableForPurchase={product.isAvailableForPurchase}
+                  />
+                  <DropdownMenuSeparator />
+                  <DeleteDropdownItem
+                    id={product.id}
+                    disabled={product._count.orders > 0}
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -103,5 +119,5 @@ async function ProductsTable() {
         ))}
       </TableBody>
     </Table>
-  );
+  )
 }
