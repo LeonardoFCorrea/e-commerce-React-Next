@@ -4,14 +4,14 @@ import { ProductForm } from "../../_components/productForm";
 import { notFound } from "next/navigation";
 
 export default async function EditProductPage(props: any) {
-  const { id } = await props.params; // ✅ await aqui
+  const { id } = await props.params;
 
   if (!id) {
     return notFound();
   }
 
   const product = await db.product.findUnique({
-    where: { id }, // UUID
+    where: { id }, 
   });
 
   if (!product) return notFound();
