@@ -1,5 +1,6 @@
 "use client";
 
+import { userOrderExists } from "@/app/actions/orders";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/formatters";
+import { LinkAuthenticationElement } from "@stripe/react-stripe-js";
 import {
   Elements,
   PaymentElement,
@@ -18,6 +20,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Image from "next/image";
+import React, { useState } from "react";
 
 type CheckoutFormProps = {
   product: {
@@ -43,7 +46,7 @@ export function CheckoutForm({ product, clientSecret }: CheckoutFormProps) {
             src={product.imgPath}
             fill
             alt={product.name}
-            className="object-cover"
+            className="object-contain rounded-md border-1 border-zinc-300"
           />
         </div>
         <div>
@@ -57,28 +60,78 @@ export function CheckoutForm({ product, clientSecret }: CheckoutFormProps) {
         </div>
       </div>
       <Elements stripe={stripePromise} options={{ clientSecret }}>
-        <Form priceCents={product.priceCents} />
+        <Form priceCents={product.priceCents} productId={product.id} />
       </Elements>
     </div>
   );
 }
 
-function Form({ priceCents }: { priceCents: number }) {
+function Form({
+  priceCents,
+  productId,
+}: {
+  priceCents: number;
+  productId: string;
+}) {
   const stripe = useStripe();
   const elements = useElements();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>();
+  const [email, setEmail] = useState<string>();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements || isLoading || !email) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    const orderExists = await userOrderExists(email, productId);
+
+    if (orderExists) {
+      setErrorMessage(
+        "You have already purchased this product with this email.",
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/stripe/purchase-success`,
+      },
+    });
+  }
+
   return (
-    <form action="">
-      <Card>
+    <form onSubmit={handleSubmit}>
+      <Card className="border border-zinc-300">
         <CardHeader>
           <CardTitle>Checkout</CardTitle>
-          <CardDescription className="text-destructive">Error.</CardDescription>
+          {errorMessage && (
+            <CardDescription className="text-destructive">
+              {errorMessage}
+            </CardDescription>
+          )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <PaymentElement />
+          <div className="mt-4"></div>
+          <LinkAuthenticationElement
+            onChange={(e) => setEmail(e.value.email)}
+          />
         </CardContent>
         <CardFooter>
-          <Button className="w-full cursor-pointer"  size="lg" disabled={!stripe || !elements}>
-            Complete Purchase - {formatCurrency(priceCents / 100)}
+          <Button
+            className="w-full cursor-pointer"
+            size="lg"
+            disabled={!stripe || !elements || isLoading}
+          >
+            {isLoading
+              ? "Processing..."
+              : `Complete Purchase - ${formatCurrency(priceCents / 100)}`}
           </Button>
         </CardFooter>
       </Card>
